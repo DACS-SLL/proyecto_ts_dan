@@ -43,6 +43,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/diagnostic", func(w http.ResponseWriter, _ *http.Request) { enviar(w, http.StatusOK, domain.Diagnostico) })
 	mux.HandleFunc("POST /api/sessions", s.crear)
 	mux.HandleFunc("GET /api/sessions/{id}", s.ver)
+	mux.HandleFunc("GET /api/sessions/{id}/interactions", s.interacciones)
 	mux.HandleFunc("POST /api/sessions/{id}/answer", s.responder)
 	mux.HandleFunc("POST /api/sessions/{id}/next", s.siguiente)
 	return mux
@@ -93,6 +94,11 @@ func (s *Server) buscar(w http.ResponseWriter, r *http.Request) *sesion {
 func (s *Server) ver(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock(); defer s.mu.Unlock()
 	if x := s.buscar(w, r); x != nil { enviar(w, 200, vista(x)) }
+}
+
+func (s *Server) interacciones(w http.ResponseWriter, r *http.Request) {
+	s.mu.Lock(); defer s.mu.Unlock()
+	if x := s.buscar(w, r); x != nil { enviar(w, 200, x.Historial) }
 }
 
 func (s *Server) responder(w http.ResponseWriter, r *http.Request) {
