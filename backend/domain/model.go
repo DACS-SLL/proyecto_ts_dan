@@ -13,34 +13,34 @@ type ConfigUmbrales struct {
 var Umbrales = ConfigUmbrales{ErrorRecurrente: 2, DominioAlto: 0.75, Refuerzo: 0.5, TiempoRapidoMS: 12000, Ventana: 4}
 
 type EstadoTema struct {
-	Tema           string    `json:"tema"`
-	Dominio        float64   `json:"dominio"`
-	Nivel          int       `json:"nivel"`
-	Evidencias     int       `json:"evidencias"`
-	Refuerzo       bool      `json:"refuerzo"`
-	ActualizadoEn  time.Time `json:"actualizadoEn"`
+	Tema          string    `json:"tema"`
+	Dominio       float64   `json:"dominio"`
+	Nivel         int       `json:"nivel"`
+	Evidencias    int       `json:"evidencias"`
+	Refuerzo      bool      `json:"refuerzo"`
+	ActualizadoEn time.Time `json:"actualizadoEn"`
 }
 
 type PerfilEstudiante struct {
 	ID            string                 `json:"id"`
 	Nombre        string                 `json:"nombre"`
 	Version       int                    `json:"version"`
-	Diagnosticado  bool                   `json:"diagnosticado"`
+	Diagnosticado bool                   `json:"diagnosticado"`
 	Temas         map[string]*EstadoTema `json:"temas"`
 	ActualizadoEn time.Time              `json:"actualizadoEn"`
 }
 
 type Interaccion struct {
-	ID            string    `json:"id"`
-	ActividadID   string    `json:"actividadId"`
-	Tema          string    `json:"tema"`
-	Dificultad    int       `json:"dificultad"`
-	Respuesta     string    `json:"respuesta"`
-	Correcta      bool      `json:"correcta"`
-	DuracionMS    int64     `json:"duracionMs"`
-	Intento       int       `json:"intento"`
-	Ayuda         string    `json:"ayuda"`
-	Momento       time.Time `json:"momento"`
+	ID          string    `json:"id"`
+	ActividadID string    `json:"actividadId"`
+	Tema        string    `json:"tema"`
+	Dificultad  int       `json:"dificultad"`
+	Respuesta   string    `json:"respuesta"`
+	Correcta    bool      `json:"correcta"`
+	DuracionMS  int64     `json:"duracionMs"`
+	Intento     int       `json:"intento"`
+	Ayuda       string    `json:"ayuda"`
+	Momento     time.Time `json:"momento"`
 }
 
 type ReglaAdaptativa struct {
@@ -49,14 +49,14 @@ type ReglaAdaptativa struct {
 }
 
 type DecisionAdaptativa struct {
-	ReglaID            string  `json:"reglaId"`
-	Razon              string  `json:"razon"`
-	TemaSiguiente      string  `json:"temaSiguiente"`
-	NivelSiguiente     int     `json:"nivelSiguiente"`
-	PrecisionReciente  float64 `json:"precisionReciente"`
-	ErroresConsecutivos int    `json:"erroresConsecutivos"`
-	Dominio            float64 `json:"dominio"`
-	InteraccionID      string  `json:"interaccionId"`
+	ReglaID             string  `json:"reglaId"`
+	Razon               string  `json:"razon"`
+	TemaSiguiente       string  `json:"temaSiguiente"`
+	NivelSiguiente      int     `json:"nivelSiguiente"`
+	PrecisionReciente   float64 `json:"precisionReciente"`
+	ErroresConsecutivos int     `json:"erroresConsecutivos"`
+	Dominio             float64 `json:"dominio"`
+	InteraccionID       string  `json:"interaccionId"`
 }
 
 type Actividad struct {
@@ -95,6 +95,10 @@ var Actividades = []Actividad{
 }
 
 func BuscarActividad(id string) (Actividad, bool) {
-	for _, a := range Actividades { if a.ID == id { return a, true } }
+	for _, a := range Actividades {
+		if a.ID == id {
+			return a, true
+		}
+	}
 	return Actividad{}, false
 }
