@@ -21,13 +21,22 @@ type EstadoTema struct {
 	ActualizadoEn time.Time `json:"actualizadoEn"`
 }
 
+type ResultadoDiagnostico struct {
+	Tema           string    `json:"tema"`
+	Aciertos       int       `json:"aciertos"`
+	Total          int       `json:"total"`
+	DominioInicial float64   `json:"dominioInicial"`
+	EvaluadoEn     time.Time `json:"evaluadoEn"`
+}
+
 type PerfilEstudiante struct {
-	ID            string                 `json:"id"`
-	Nombre        string                 `json:"nombre"`
-	Version       int                    `json:"version"`
-	Diagnosticado bool                   `json:"diagnosticado"`
-	Temas         map[string]*EstadoTema `json:"temas"`
-	ActualizadoEn time.Time              `json:"actualizadoEn"`
+	ID            string                          `json:"id"`
+	Nombre        string                          `json:"nombre"`
+	Version       int                             `json:"version"`
+	Diagnosticado bool                            `json:"diagnosticado"`
+	Diagnostico   map[string]ResultadoDiagnostico `json:"diagnostico"`
+	Temas         map[string]*EstadoTema          `json:"temas"`
+	ActualizadoEn time.Time                       `json:"actualizadoEn"`
 }
 
 type Interaccion struct {
@@ -74,9 +83,9 @@ var Reglas = []ReglaAdaptativa{
 	{"RA02", "Nueva interacción actualiza el perfil y dominio"},
 	{"RA03", "Primer error ofrece corrección y pista"},
 	{"RA04", "Error recurrente cambia apoyo y reduce dificultad"},
-	{"RA05", "Precisión alta y respuesta rápida aumenta dificultad"},
-	{"RA06", "Dominio insuficiente programa refuerzo"},
-	{"RA07", "Dominio alto permite avanzar de tema"},
+	{"RA05", "Dificultad elevada reduce un nivel permitido"},
+	{"RA06", "Dominio alto aumenta la dificultad o permite avanzar de tema"},
+	{"RA07", "Dominio insuficiente mantiene el tema para refuerzo"},
 }
 
 var Actividades = []Actividad{

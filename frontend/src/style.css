@@ -44,6 +44,10 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .feedback p { margin: 7px 0 0; }
 .feedback.needs-work { border-color: #ad7525; background: #fcf7ed; }
 .tally { margin: 0 0 26px; color: #202e35; font-weight: 600; }
+.initial-result { margin-bottom: 24px; padding: 16px 0; border-top: 1px solid #e5eae8; border-bottom: 1px solid #e5eae8; }
+.initial-result h3 { margin: 0 0 10px; font-size: 1rem; }
+.initial-result p { margin: 4px 0; font-size: .9rem; }
+.initial-result small { display: block; margin-top: 9px; color: #607178; font-size: .82rem; }
 .topic { margin: 0 0 24px; }
 .topic-head { display: flex; justify-content: space-between; gap: 10px; }
 .topic-head span, .topic small, .decision small { color: #607178; font-size: .86rem; }

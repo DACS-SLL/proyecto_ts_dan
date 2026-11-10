@@ -28,6 +28,7 @@ func NuevoPerfil(id, nombre string, respuestas map[string]string, ahora time.Tim
 		return nil, errors.New("el nombre es obligatorio")
 	}
 	aciertos := map[string]int{"vocabulario": 0, "gramatica": 0}
+	totales := map[string]int{"vocabulario": 0, "gramatica": 0}
 	for _, p := range Diagnostico {
 		r, ok := respuestas[p.ID]
 		if !ok {
@@ -39,12 +40,17 @@ func NuevoPerfil(id, nombre string, respuestas map[string]string, ahora time.Tim
 		if r == p.Respuesta {
 			aciertos[p.Tema]++
 		}
+		totales[p.Tema]++
 	}
-	perfil := &PerfilEstudiante{ID: id, Nombre: strings.TrimSpace(nombre), Version: 1, Diagnosticado: true, Temas: map[string]*EstadoTema{}, ActualizadoEn: ahora}
+	if len(respuestas) != len(Diagnostico) {
+		return nil, errors.New("el diagnóstico contiene preguntas desconocidas")
+	}
+	perfil := &PerfilEstudiante{ID: id, Nombre: strings.TrimSpace(nombre), Version: 1, Diagnosticado: true, Diagnostico: map[string]ResultadoDiagnostico{}, Temas: map[string]*EstadoTema{}, ActualizadoEn: ahora}
 	for _, tema := range []string{"vocabulario", "gramatica"} {
 		// La prueba corta solo fija un punto de partida: nunca declara dominio alto.
-		dominio := 0.25 + 0.125*float64(aciertos[tema])
-		perfil.Temas[tema] = &EstadoTema{Tema: tema, Dominio: dominio, Nivel: 1, Evidencias: 2, Refuerzo: false, ActualizadoEn: ahora}
+		dominio := 0.25 + 0.25*float64(aciertos[tema])/float64(totales[tema])
+		perfil.Diagnostico[tema] = ResultadoDiagnostico{Tema: tema, Aciertos: aciertos[tema], Total: totales[tema], DominioInicial: dominio, EvaluadoEn: ahora}
+		perfil.Temas[tema] = &EstadoTema{Tema: tema, Dominio: dominio, Nivel: 1, Evidencias: totales[tema], Refuerzo: false, ActualizadoEn: ahora}
 	}
 	return perfil, nil
 }
@@ -112,16 +118,20 @@ func Procesar(perfil *PerfilEstudiante, historial []Interaccion, actividad Activ
 			decision.Razon = "Error recurrente: usar otro ejemplo y reducir la dificultad si es posible."
 			feedback += " Otra forma de verlo: identifica primero la función de la palabra en la oración."
 			interaccion.Ayuda = "explicación alternativa y menor dificultad"
+			if decision.NivelSiguiente < actividad.Nivel {
+				decision.ReglaID = "RA05"
+				decision.Razon = "Dificultad elevada: cambiar el apoyo y reducir un nivel permitido."
+			}
 		}
-	} else if len(ventana) >= 2 && precision >= Umbrales.DominioAlto && duracionMS <= Umbrales.TiempoRapidoMS {
-		decision.ReglaID = "RA05"
+	} else if len(ventana) >= 2 && precision >= Umbrales.DominioAlto && estado.Dominio >= Umbrales.DominioAlto && duracionMS <= Umbrales.TiempoRapidoMS {
+		decision.ReglaID = "RA06"
 		decision.NivelSiguiente = min(3, actividad.Nivel+1)
-		decision.Razon = "Precisión reciente alta y respuesta rápida: subir un nivel permitido."
+		decision.Razon = "Dominio alto, precisión reciente alta y respuesta rápida: subir un nivel permitido."
 	} else {
 		decision.Razon = "Mantener el nivel mientras se reúne más evidencia."
 	}
-	if estado.Refuerzo && correcta && decision.ReglaID != "RA05" {
-		decision.ReglaID = "RA06"
+	if estado.Refuerzo && correcta && decision.ReglaID != "RA06" {
+		decision.ReglaID = "RA07"
 		decision.Razon = "El dominio sigue bajo el umbral: mantener el tema para refuerzo."
 	}
 	estado.Nivel = decision.NivelSiguiente
@@ -148,14 +158,14 @@ func Siguiente(perfil *PerfilEstudiante, historial []Interaccion, decision *Deci
 	} else if perfil != nil && perfil.Temas["gramatica"].Dominio < perfil.Temas["vocabulario"].Dominio {
 		tema = "gramatica"
 	}
-	if decision != nil && decision.ReglaID == "RA05" && perfil.Temas[tema].Dominio >= Umbrales.DominioAlto && perfil.Temas[tema].Evidencias >= 5 {
+	if decision != nil && decision.ReglaID == "RA06" && perfil.Temas[tema].Dominio >= Umbrales.DominioAlto && perfil.Temas[tema].Evidencias >= 5 {
 		otro := "gramatica"
 		if tema == otro {
 			otro = "vocabulario"
 		}
 		if perfil.Temas[otro].Dominio < perfil.Temas[tema].Dominio {
 			tema, nivel = otro, perfil.Temas[otro].Nivel
-			decision.ReglaID, decision.TemaSiguiente, decision.NivelSiguiente, decision.Razon = "RA07", tema, nivel, "Dominio alto sostenido: avanzar al otro tema."
+			decision.ReglaID, decision.TemaSiguiente, decision.NivelSiguiente, decision.Razon = "RA06", tema, nivel, "Dominio alto sostenido: avanzar al otro tema."
 		}
 	}
 	uso := map[string]int{}

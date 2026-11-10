@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { diagnosticoCompleto, resumenDiagnostico } from './diagnostic.js'
 
 async function api(path, options = {}) {
   const response = await fetch('/api' + path, { headers: { 'Content-Type': 'application/json' }, ...options })
@@ -18,7 +19,8 @@ const cargando = ref(false)
 const error = ref('')
 const temaNombre = tema => tema === 'gramatica' ? 'Gramática' : 'Vocabulario'
 const porcentaje = valor => Math.round(valor * 100) + '%'
-const listo = computed(() => preguntas.value.length > 0 && nombre.value.trim() && preguntas.value.every(p => diagnostico.value[p.id]))
+const listo = computed(() => diagnosticoCompleto(nombre.value, preguntas.value, diagnostico.value))
+const resultadosIniciales = computed(() => sesion.value ? resumenDiagnostico(sesion.value.perfil) : [])
 const resetActividad = () => { respuesta.value = ''; inicio.value = Date.now() }
 const ejecutar = async trabajo => {
   error.value = ''; cargando.value = true
@@ -72,7 +74,7 @@ const reiniciar = () => { localStorage.removeItem('tesis-v01-sesion'); sesion.va
         <template v-if="sesion.pendiente"><div class="answer-list"><label v-for="opcion in sesion.actividad.opciones" :key="opcion" class="option"><input type="radio" name="respuesta" :value="opcion" v-model="respuesta">{{ opcion }}</label></div><button :disabled="!respuesta || cargando" @click="responder">Comprobar respuesta</button></template>
         <template v-else><div class="feedback" :class="sesion.ultima.correcta ? 'success' : 'needs-work'"><strong>{{ sesion.ultima.correcta ? 'Correcto' : 'Revisemos la respuesta' }}</strong><p>{{ sesion.feedback }}</p></div><button :disabled="cargando" @click="siguiente">Siguiente actividad</button></template>
       </div>
-      <aside class="panel progress"><h2>Tu progreso</h2><p class="tally">{{ sesion.progreso.aciertos }} de {{ sesion.progreso.respondidas }} actividades correctas</p><div v-for="estado in sesion.perfil.temas" :key="estado.tema" class="topic"><div class="topic-head"><strong>{{ temaNombre(estado.tema) }}</strong><span>{{ porcentaje(estado.dominio) }}</span></div><div class="bar"><i :style="{width: porcentaje(estado.dominio)}"></i></div><small>Nivel {{ estado.nivel }} · {{ estado.evidencias }} respuestas consideradas{{ estado.refuerzo ? ' · necesita repaso' : '' }}</small></div><p class="note">El porcentaje es una estimación basada en tus respuestas.</p></aside>
+      <aside class="panel progress"><h2>Tu progreso</h2><p class="tally">{{ sesion.progreso.aciertos }} de {{ sesion.progreso.respondidas }} actividades correctas</p><div v-if="resultadosIniciales.length" class="initial-result"><h3>Diagnóstico inicial</h3><p v-for="resultado in resultadosIniciales" :key="resultado.tema">{{ temaNombre(resultado.tema) }}: {{ resultado.aciertos }} de {{ resultado.total }} respuestas correctas</p><small>Este resultado es el punto de partida; no mide un dominio definitivo.</small></div><div v-for="estado in sesion.perfil.temas" :key="estado.tema" class="topic"><div class="topic-head"><strong>{{ temaNombre(estado.tema) }}</strong><span>{{ porcentaje(estado.dominio) }}</span></div><div class="bar"><i :style="{width: porcentaje(estado.dominio)}"></i></div><small>Nivel {{ estado.nivel }} · {{ estado.evidencias }} respuestas consideradas{{ estado.refuerzo ? ' · necesita repaso' : '' }}</small></div><p class="note">El porcentaje es una estimación basada en tus respuestas.</p></aside>
     </section>
     <section v-if="sesion.decision" class="panel decision"><h2>Cómo se ajustó la actividad</h2><p>{{ sesion.decision.razon }}</p><dl><div><dt>Precisión reciente</dt><dd>{{ porcentaje(sesion.decision.precisionReciente) }}</dd></div><div><dt>Errores seguidos</dt><dd>{{ sesion.decision.erroresConsecutivos }}</dd></div><div><dt>Ruta sugerida</dt><dd>{{ temaNombre(sesion.decision.temaSiguiente) }} · nivel {{ sesion.decision.nivelSiguiente }}</dd></div></dl><small>Regla {{ sesion.decision.reglaId }}</small></section>
   </template>

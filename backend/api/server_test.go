@@ -27,7 +27,13 @@ func TestFlujoHTTPYRespuestaDuplicada(t *testing.T) {
 	}
 	var vista struct {
 		Perfil struct {
-			ID string `json:"id"`
+			ID          string `json:"id"`
+			Version     int    `json:"version"`
+			Diagnostico map[string]struct {
+				Aciertos       int     `json:"aciertos"`
+				Total          int     `json:"total"`
+				DominioInicial float64 `json:"dominioInicial"`
+			} `json:"diagnostico"`
 		} `json:"perfil"`
 		Actividad struct {
 			ID string `json:"id"`
@@ -36,11 +42,28 @@ func TestFlujoHTTPYRespuestaDuplicada(t *testing.T) {
 	if err := json.Unmarshal(creada.Body.Bytes(), &vista); err != nil {
 		t.Fatal(err)
 	}
+	if vista.Perfil.Version != 1 || vista.Perfil.Diagnostico["vocabulario"].Aciertos != 2 || vista.Perfil.Diagnostico["gramatica"].Total != 2 {
+		t.Fatalf("diagnóstico ausente en la API: %+v", vista.Perfil)
+	}
 	contenido, _ := json.Marshal(map[string]any{"actividadId": vista.Actividad.ID, "respuesta": "water", "duracionMs": 3000})
 	ruta := "/api/sessions/" + vista.Perfil.ID
 	primera := peticion(http.MethodPost, ruta+"/answer", string(contenido))
 	if primera.Code != 200 {
 		t.Fatalf("respuesta: %s", primera.Body.String())
+	}
+	var actualizada struct {
+		Perfil struct {
+			Version     int `json:"version"`
+			Diagnostico map[string]struct {
+				DominioInicial float64 `json:"dominioInicial"`
+			} `json:"diagnostico"`
+		} `json:"perfil"`
+	}
+	if err := json.Unmarshal(primera.Body.Bytes(), &actualizada); err != nil {
+		t.Fatal(err)
+	}
+	if actualizada.Perfil.Version != 2 || actualizada.Perfil.Diagnostico["vocabulario"].DominioInicial != vista.Perfil.Diagnostico["vocabulario"].DominioInicial {
+		t.Fatal("la respuesta no conservó el resultado diagnóstico inicial")
 	}
 	if peticion(http.MethodPost, ruta+"/answer", string(contenido)).Code != 409 {
 		t.Fatal("permitió una respuesta duplicada")
